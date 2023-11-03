@@ -12,10 +12,10 @@ function verifyToken(req, res, next) {
       process.env.ACCESS_TOKEN_SECRET,
       (error, authData) => {
         if (error) {
-          res.status(403).json({
+          res.status(401).json({
             tokenValid: false,
+            message: "jwt expired",
           });
-          throw new Error("Token not valid");
         } else {
           res.status(200).json({
             tokenValid: true,

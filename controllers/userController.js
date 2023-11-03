@@ -3,6 +3,7 @@ const User = require("../models/userModel");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 
+// SIGN UP
 const userSignup = asyncHandler(async (req, res) => {
   const { email, password } = req.body;
 
@@ -27,7 +28,7 @@ const userSignup = asyncHandler(async (req, res) => {
 
   if (user) {
     // Create Token
-    const accessToekn = jwt.sign(
+    const accessToken = jwt.sign(
       {
         user: {
           email: user.email,
@@ -38,15 +39,28 @@ const userSignup = asyncHandler(async (req, res) => {
       { expiresIn: "5m" }
     );
 
+    // Create Refresh Token
+    const refreshToken = jwt.sign(
+      {
+        user: {
+          email: user.email,
+          id: user.id,
+        },
+      },
+      process.env.REFRESH_TOKEN_SECRET
+    );
+
     res.status(201).json({
       user: { _id: user.id, email: user.email },
-      accessToekn,
+      accessToken,
+      refreshToken,
     });
   } else {
     res.status(400).json({ error: "User data not valid" });
   }
 });
 
+// LOGIN
 const userLogin = asyncHandler(async (req, res) => {
   const { email, password } = req.body;
 
@@ -57,7 +71,8 @@ const userLogin = asyncHandler(async (req, res) => {
   const user = await User.findOne({ email });
 
   if (user && (await bcrypt.compare(password, user.password))) {
-    const accessToekn = jwt.sign(
+    // Create Token
+    const accessToken = jwt.sign(
       {
         user: {
           email: user.email,
@@ -68,8 +83,20 @@ const userLogin = asyncHandler(async (req, res) => {
       { expiresIn: "5m" }
     );
 
+    // Create Refresh Token
+    const refreshToken = jwt.sign(
+      {
+        user: {
+          email: user.email,
+          id: user.id,
+        },
+      },
+      process.env.REFRESH_TOKEN_SECRET
+    );
+
     res.status(200).json({
-      accessToekn,
+      accessToken,
+      refreshToken,
       user: { _id: user.id, email: user.email },
       message: "Logged in successfully",
     });
@@ -78,4 +105,46 @@ const userLogin = asyncHandler(async (req, res) => {
   }
 });
 
-module.exports = { userSignup, userLogin };
+const refreshToken = asyncHandler(async (req, res) => {
+  const bearerHeader = req.headers["authorization"];
+
+  if (typeof bearerHeader !== undefined) {
+    const bearer = bearerHeader.split(" ");
+    const bearerToken = bearer[1];
+
+    jwt.verify(
+      bearerToken,
+      process.env.REFRESH_TOKEN_SECRET,
+      (error, authData) => {
+        if (error) {
+          res.status(401).json({
+            tokenValid: false,
+            message: "refresh token invalid",
+          });
+        } else {
+          console.log(authData);
+          const accessToken = jwt.sign(
+            {
+              user: {
+                email: authData.user.email,
+                id: authData.user.id,
+              },
+            },
+            process.env.ACCESS_TOKEN_SECRET,
+            { expiresIn: "5m" }
+          );
+
+          res.status(200).json({
+            tokenValid: true,
+            accessToken,
+            message: "Token Updated",
+          });
+        }
+      }
+    );
+  } else {
+    res.status(403).json({ error: "User not authorised" });
+  }
+});
+
+module.exports = { userSignup, userLogin, refreshToken };
