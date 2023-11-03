@@ -14,8 +14,7 @@ const userSignup = asyncHandler(async (req, res) => {
   const userAlreadyAvailable = await User.findOne({ email });
 
   if (userAlreadyAvailable) {
-    res.status(400);
-    throw new Error("User already registered");
+    res.status(400).json({ error: "User already registered" });
   }
 
   // Hash Password
@@ -44,8 +43,7 @@ const userSignup = asyncHandler(async (req, res) => {
       accessToekn,
     });
   } else {
-    res.status(400);
-    throw new Error("User data not valid");
+    res.status(400).json({ error: "User data not valid" });
   }
 });
 
@@ -53,8 +51,7 @@ const userLogin = asyncHandler(async (req, res) => {
   const { email, password } = req.body;
 
   if (!email || !password) {
-    res.status(400);
-    throw new Error("Please provide email and password");
+    res.status(400).json({ error: "Please provide email and password" });
   }
 
   const user = await User.findOne({ email });
@@ -67,8 +64,8 @@ const userLogin = asyncHandler(async (req, res) => {
           id: user.id,
         },
       },
-      process.env.ACCESS_TOKEN_SECRET
-      // { expiresIn: '50m' }
+      process.env.ACCESS_TOKEN_SECRET,
+      { expiresIn: "5m" }
     );
 
     res.status(200).json({
@@ -77,8 +74,7 @@ const userLogin = asyncHandler(async (req, res) => {
       message: "Logged in successfully",
     });
   } else {
-    res.status(404);
-    throw new Error("Email or Password is not valid");
+    res.status(404).json({ error: "Email or Password is not valid" });
   }
 });
 
