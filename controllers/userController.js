@@ -16,6 +16,7 @@ const userSignup = asyncHandler(async (req, res) => {
 
   if (userAlreadyAvailable) {
     res.status(400).json({ error: "User already registered" });
+    return;
   }
 
   // Hash Password
@@ -57,6 +58,7 @@ const userSignup = asyncHandler(async (req, res) => {
     });
   } else {
     res.status(400).json({ error: "User data not valid" });
+    return;
   }
 });
 
@@ -66,6 +68,7 @@ const userLogin = asyncHandler(async (req, res) => {
 
   if (!email || !password) {
     res.status(400).json({ error: "Please provide email and password" });
+    return;
   }
 
   const user = await User.findOne({ email });
@@ -102,6 +105,7 @@ const userLogin = asyncHandler(async (req, res) => {
     });
   } else {
     res.status(404).json({ error: "Email or Password is not valid" });
+    return;
   }
 });
 
